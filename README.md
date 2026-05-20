@@ -22,6 +22,8 @@ This lab demonstrates how to enforce safe collaboration practices on a GitHub re
 | `.github/workflows/ci.yml` | Runs `terraform fmt`, `terraform init`, and `terraform validate` on every PR targeting `main` |
 | `.github/workflows/labeler.yml` | Executes the labeler on every PR event |
 | `.github/workflows/pr-checklist.yml` | Posts an author/reviewer checklist comment when a PR is opened |
+| `.github/workflows/auto-merge.yml` | Automatically merges a PR (squash) once it has an approval and all checks pass |
+| `.github/workflows/stale-prs.yml` | Flags PRs inactive for 7 days with a `stale` label and closes them after 14 days |
 
 ## Branch Protection Rules Applied
 
@@ -108,12 +110,42 @@ gh pr view
 
 ![gh pr view — checks passing, terraform label](screenshots/08-gh-pr-view-checks-passing-terraform-label.png)
 
+## Auto-Merge Workflow
+
+Once a PR has been approved and all required checks have passed, merging can happen without any further manual action. The `auto-merge.yml` workflow listens for two events:
+
+- `pull_request_review` — fires when a review is submitted
+- `check_suite` — fires when a CI suite completes
+
+On each event it queries every open PR targeting `main`, verifies that at least one review is in `APPROVED` state, and then checks that every check run on the PR's head SHA has concluded with `success` or `skipped`. If both conditions are true it merges the PR automatically using the **squash** strategy, keeping the `main` history linear.
+
+```
+Review submitted ──┐
+                   ├──► all checks passed? ──► squash merge
+CI suite completed ┘        AND approved?
+```
+
+**Permissions required:** `contents: write` and `pull-requests: write` are declared in the workflow so the `GITHUB_TOKEN` has sufficient scope to call the merge API.
+
+## Stale PR Reminder
+
+The `stale-prs.yml` workflow runs on a schedule every **Monday at 09:00 UTC**. It uses the `actions/stale` action to:
+
+| Days of inactivity | Action |
+|---|---|
+| 7 days | Adds the `stale` label and posts a reminder comment |
+| 14 days | Closes the PR |
+
+PRs labelled `work-in-progress` or `do-not-close` are exempt and will never be flagged. The reminder comment instructs the author to either push updates, request a re-review, or close the PR explicitly.
+
 ## Key Learnings
 
 - **Branch protection rules** decouple "code is valid" from "code is approved" — both are enforced independently.
 - **CODEOWNERS** ensures the right people are automatically assigned as reviewers based on which files changed.
 - **Required status checks** prevent merges when CI is broken, even for administrators.
 - **PR automation** (labeling and checklists) reduces manual overhead and guides contributors toward consistent quality before review begins.
+- **Auto-merge** eliminates the manual step of clicking the merge button once a PR satisfies all quality gates, reducing time-to-merge without sacrificing safety.
+- **Stale PR management** prevents the PR queue from growing silently; inactive work is surfaced and eventually cleaned up automatically.
 - The `gh api` CLI allows branch protection to be scripted and version-controlled rather than configured manually through the GitHub UI.
 
 ## Repository Structure
@@ -126,7 +158,9 @@ gh pr view
 │   └── workflows/
 │       ├── ci.yml              # Terraform format, init, validate
 │       ├── labeler.yml         # Runs the PR labeler
-│       └── pr-checklist.yml    # Posts author/reviewer checklist on PR open
+│       ├── pr-checklist.yml    # Posts author/reviewer checklist on PR open
+│       ├── auto-merge.yml      # Squash-merges PRs once approved + checks pass
+│       └── stale-prs.yml       # Flags inactive PRs weekly, closes after 14 days
 ├── screenshots/                # Evidence of lab steps
 ├── main.tf                     # S3 bucket + DynamoDB table resources
 ├── variables.tf                # aws_region, project_name, environment

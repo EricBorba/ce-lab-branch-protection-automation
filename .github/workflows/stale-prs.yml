@@ -1,0 +1,29 @@
+name: Stale PR Reminder
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Every Monday at 9:00 UTC
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  stale:
+    name: Flag Stale PRs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check for stale PRs
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-pr-message: |
+            This PR has been inactive for 7 days. Please take one of the following actions:
+            - Address outstanding review comments and push updates
+            - Request a re-review if you're waiting on feedback
+            - Close the PR if it's no longer needed
+          days-before-pr-stale: 7
+          days-before-pr-close: 14
+          stale-pr-label: "stale"
+          exempt-pr-labels: "work-in-progress,do-not-close"
