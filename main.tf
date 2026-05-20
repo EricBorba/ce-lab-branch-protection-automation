@@ -29,3 +29,20 @@ resource "aws_s3_bucket_versioning" "app_assets" {
     status = "Enabled"
   }
 }
+
+resource "aws_dynamodb_table" "app_state" {
+  name         = "${var.project_name}-${var.environment}-state"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+
+  tags = {
+    Name        = "${var.project_name}-state"
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
