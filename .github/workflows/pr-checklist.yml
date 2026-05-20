@@ -1,0 +1,48 @@
+name: PR Checklist
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  checklist:
+    name: Post Review Checklist
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Post checklist comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## PR Review Checklist
+
+            Thanks for your contribution! Please ensure the following before requesting review:
+
+            ### Author Checklist
+            - [ ] Terraform code is formatted (\`terraform fmt\`)
+            - [ ] Terraform validates successfully (\`terraform validate\`)
+            - [ ] Variables have descriptions and appropriate defaults
+            - [ ] Outputs are defined for key resource attributes
+            - [ ] Resource naming follows convention: \`{project}-{env}-{resource}\`
+            - [ ] Required tags are present: \`Name\`, \`Environment\`, \`ManagedBy\`
+
+            ### Reviewer Checklist
+            - [ ] No hardcoded values (secrets, account IDs, regions)
+            - [ ] Changes match the PR description
+            - [ ] No unnecessary resource destruction in plan
+            - [ ] Security group rules are appropriately scoped
+
+            ---
+            *This checklist was posted automatically by the PR Checklist bot.*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+            console.log('Checklist comment posted successfully');

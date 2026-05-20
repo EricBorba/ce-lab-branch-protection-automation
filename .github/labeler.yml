@@ -1,0 +1,18 @@
+terraform:
+  - changed-files:
+      - any-glob-to-any-file: "**/*.tf"
+      - any-glob-to-any-file: "**/*.tfvars"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: "**/*.md"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ".github/workflows/**"
+
+config:
+  - changed-files:
+      - any-glob-to-any-file: "**/*.yml"
+      - any-glob-to-any-file: "**/*.yaml"
+      - any-glob-to-any-file: ".gitignore"
